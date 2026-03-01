@@ -315,6 +315,70 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: var(--apple-blue-hover);
 }
 
+/* ---------- 上傳圖片頁：上傳選項 ---------- */
+.upload-layout {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.upload-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 180px;
+    height: 160px;
+    background: var(--apple-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 2px dashed var(--apple-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.upload-card:hover {
+    border-color: var(--apple-blue);
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.upload-label {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--apple-text);
+}
+
+.upload-hint {
+    font-size: 0.75rem;
+    color: var(--apple-gray);
+    margin-top: 4px;
+}
+
+#imagePreviewArea.preview-box--image {
+    width: 100%;
+    max-width: 500px;
+    height: 320px;
+    min-height: 200px;
+}
+
 /* ---------- 區塊 2：預覽區 ---------- */
 .preview-layout {
     width: 100%;
@@ -348,6 +412,42 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .preview-box svg {
     max-width: 100%;
     max-height: 100%;
+}
+
+.mode-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.mode-label {
+    font-size: 0.875rem;
+    color: var(--apple-gray);
+    font-weight: 500;
+}
+.mode-btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--apple-gray);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--apple-border);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.mode-btn:hover {
+    background: #fff;
+    color: var(--apple-text);
+    border-color: var(--apple-gray);
+}
+.mode-btn.active {
+    background: var(--apple-blue);
+    color: #fff;
+    border-color: var(--apple-blue);
 }
 
 .section-actions {

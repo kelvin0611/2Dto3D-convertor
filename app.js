@@ -267,7 +267,6 @@ function build3DModel() {
     const platePadding = 40;
     const strokeHeight = 15;
 
-    // 建立 3D 列印底板
     const plateGeo = new THREE.BoxGeometry(drawingBBox.w + platePadding, drawingBBox.h + platePadding, plateThickness);
     const plateMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
     const plateMesh = new THREE.Mesh(plateGeo, plateMat);
