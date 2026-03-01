@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snek.3D — 2D 轉 3D 模型</title>
+    <title>Snek.3D — 上傳圖片轉 3D</title>
     <link href="style.css" rel="stylesheet">
 </head>
 <body class="apple-theme">
@@ -12,38 +12,41 @@
         <div class="nav-content">
             <span class="brand">Snek<span class="dot">.</span>3D</span>
             <div class="step-indicator">
-                <span class="step active" data-step="section-2d">01 繪製</span>
+                <span class="step active" data-step="section-upload">01 上傳</span>
                 <span class="arrow">→</span>
                 <span class="step" data-step="section-preview">02 預覽</span>
                 <span class="arrow">→</span>
                 <span class="step" data-step="section-3d">03 導出</span>
             </div>
-            <a href="upload.html" class="icon-btn-text">📷 上傳圖片</a>
+            <a href="index.html" class="icon-btn-text">🖌️ 繪製創作</a>
             <a href="gallery.html" class="icon-btn-text">📂 作品集</a>
         </div>
     </nav>
 
     <main class="workspace-container">
-        <!-- 區塊 1：2D 繪製 -->
-        <section id="section-2d" class="canvas-section">
-            <div class="canvas-wrapper canvas-dot-grid">
-                <canvas id="canvas2d" width="600" height="600"></canvas>
-            </div>
-            <div class="floating-toolbar">
-                <div class="tool-group">
-                    <button type="button" id="tool-brush" class="tool-circle active" title="畫筆">🖌️</button>
-                    <button type="button" id="tool-eraser" class="tool-circle" title="橡皮擦">🧽</button>
+        <!-- 區塊 1：上傳圖片 -->
+        <section id="section-upload" class="canvas-section">
+            <div class="upload-layout">
+                <p class="section-caption">選擇圖片，轉換為 2D 輪廓後生成 3D 模型</p>
+                <div class="upload-options">
+                    <label class="upload-card">
+                        <input type="file" id="fileInput" accept="image/*" style="display:none">
+                        <span class="upload-icon">📁</span>
+                        <span class="upload-label">選擇檔案</span>
+                        <span class="upload-hint">從裝置選擇圖片</span>
+                    </label>
+                    <label class="upload-card">
+                        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+                        <span class="upload-icon">📷</span>
+                        <span class="upload-label">拍照</span>
+                        <span class="upload-hint">使用相機拍攝</span>
+                    </label>
                 </div>
-                <div class="divider"></div>
-                <div class="slider-group">
-                    <input type="range" id="sizeSlider" min="2" max="30" value="10" aria-label="筆刷粗細">
-                    <span id="sizeDisplay">10px</span>
+                <div id="imagePreviewArea" class="preview-box preview-box--image hidden">
+                    <img id="imagePreview" alt="預覽" style="max-width:100%;max-height:100%;object-fit:contain">
                 </div>
-                <div class="divider"></div>
-                <div class="action-group">
-                    <button type="button" id="undoBtn" class="action-btn-circle" title="復原">↩</button>
-                    <button type="button" id="clearBtn" class="action-btn-circle" title="清除">🗑</button>
-                    <button type="button" id="goToPreviewBtn" class="btn-primary-apple">下一步：預覽 2D</button>
+                <div id="convertBtnRow" class="section-actions hidden">
+                    <button type="button" id="convertTo2dBtn" class="btn-primary-apple">轉換為 2D 輪廓並生成 3D</button>
                 </div>
             </div>
         </section>
@@ -51,16 +54,21 @@
         <!-- 區塊 2：2D 預覽 -->
         <section id="section-preview" class="canvas-section hidden">
             <div class="preview-layout">
-                <p class="section-caption">裁切後的向量圖 (SVG)</p>
+                <p class="section-caption">萃取後的 2D 輪廓 (SVG)</p>
                 <div id="preview2d-container" class="preview-box"></div>
+                <div class="mode-row">
+                    <span class="mode-label">3D 模式：</span>
+                    <button type="button" id="modePixel" class="mode-btn active" title="一格一格實心，結構最穩">🟫 實心像素（較穩）</button>
+                    <button type="button" id="modeSmooth" class="mode-btn" title="向量曲線擠出，邊緣最平滑">〰️ 平滑路徑（較美）</button>
+                </div>
                 <div class="section-actions">
-                    <button type="button" id="backToDrawBtn" class="btn-ghost-apple">← 回到畫板</button>
-                    <button type="button" id="convertTo3dBtn" class="btn-primary-apple">生成 3D</button>
+                    <button type="button" id="backToUploadBtn" class="btn-ghost-apple">← 重新上傳</button>
+                    <button type="button" id="goTo3dBtn" class="btn-primary-apple">生成 3D</button>
                 </div>
             </div>
         </section>
 
-        <!-- 區塊 3：3D 導出（左側表單 + 右側 3D 預覽） -->
+        <!-- 區塊 3：3D 導出 -->
         <section id="section-3d" class="canvas-section hidden">
             <div class="export-layout">
                 <div class="export-actions">
@@ -87,7 +95,6 @@
         </section>
     </main>
 
-    <!-- 上傳成功彈窗（無 Bootstrap） -->
     <div id="uploadSuccessModal" class="modal-overlay" aria-hidden="true">
         <div class="modal-panel">
             <h3 class="modal-title">✓ 上傳成功</h3>
@@ -102,7 +109,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
-    <!-- 加上版本參數避免瀏覽器吃到舊的 app.js 快取 -->
-    <script src="app.js?v=5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js"></script>
+    <script src="upload.js"></script>
 </body>
 </html>

@@ -1,70 +1,693 @@
-body { background-color: #f8f9fc; font-family: sans-serif; padding: 20px; text-align: center; }
-.workspace { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 0 auto; max-width: 700px; }
-
-/* 🎨 灰白色網格背景 (套用於 3D 預覽區) */
-.grid-pattern {
-    background-color: #f4f6f9;
-    background-image: 
-        linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
-    background-size: 25px 25px;
-    background-position: center center;
+/* ========== Apple Studio — 2D to 3D ========== */
+:root {
+    --apple-bg: #F5F5F7;
+    --apple-card: rgba(255, 255, 255, 0.72);
+    --apple-text: #1D1D1F;
+    --apple-blue: #007AFF;
+    --apple-blue-hover: #0071E3;
+    --apple-gray: #86868B;
+    --apple-border: rgba(0, 0, 0, 0.06);
+    --radius-lg: 20px;
+    --radius-sm: 12px;
+    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.06);
+    --shadow-ambient: 0 20px 40px rgba(0, 0, 0, 0.04);
 }
 
-/* 畫布與預覽區樣式 */
-#canvas2d { 
-    border: 2px solid #eaecf4; 
-    border-radius: 5px; 
-    cursor: crosshair; 
-    background-color: #ffffff; 
-    width: 500px; 
-    height: 500px; 
+* {
+    box-sizing: border-box;
 }
 
-#preview2d-container { 
-    width: 500px; 
-    height: 500px; 
-    margin: 0 auto; 
-    border: 2px dashed #4e73df; 
-    background-color: #ffffff; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    overflow: hidden; 
-    padding: 20px;
+body.apple-theme {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--apple-bg);
+    color: var(--apple-text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* 讓裁切後的 SVG 自動適應預覽區大小 */
-#preview2d-container svg { 
-    max-width: 100%; 
-    max-height: 100%; 
+/* ---------- 頂部磨砂導航 ---------- */
+.glass-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--apple-card);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--apple-border);
+    box-shadow: var(--shadow-soft);
 }
 
-#container3d { 
-    width: 500px; 
-    height: 500px; 
-    margin: 0 auto; 
-    border: 2px solid #4e73df; 
-    border-radius: 5px; 
+.nav-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
 }
 
-.hidden { display: none !important; }
+.brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--apple-text);
+}
 
-/* 工具列樣式 */
-.toolbar { background: #f8f9fc; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: center; gap: 20px; align-items: center; border: 1px solid #e3e6f0; flex-wrap: wrap;}
-.tool-btn.active { background-color: #4e73df; color: white; }
+.brand .dot {
+    color: var(--apple-blue);
+}
 
-/* Gallery 作品卡片樣式：統一框大小與預覽比例 */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: var(--apple-gray);
+}
+
+.step-indicator .step {
+    padding: 4px 10px;
+    border-radius: 999px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.step-indicator .step.active {
+    color: var(--apple-blue);
+    font-weight: 500;
+    background: rgba(0, 122, 255, 0.1);
+}
+
+.step-indicator .arrow {
+    color: var(--apple-gray);
+    opacity: 0.6;
+    font-size: 0.75rem;
+}
+
+.icon-btn-text {
+    font-size: 0.875rem;
+    color: var(--apple-blue);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s, color 0.2s;
+}
+
+.icon-btn-text:hover {
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--apple-blue-hover);
+}
+
+/* ---------- 主工作區 ---------- */
+.workspace-container {
+    padding: 80px 24px 120px;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+.canvas-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 畫布外框 + 點狀網格 */
+.canvas-wrapper {
+    padding: 24px;
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-ambient);
+    border: 1px solid var(--apple-border);
+}
+
+.canvas-dot-grid {
+    background-image: radial-gradient(circle, var(--apple-border) 1px, transparent 1px);
+    background-size: 16px 16px;
+    background-color: #fff;
+}
+
+#canvas2d {
+    display: block;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    cursor: crosshair;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#canvas2d:hover {
+    transform: scale(1.005);
+}
+
+/* ---------- 懸浮工具列（玻璃） ---------- */
+.floating-toolbar {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    padding: 10px 20px 10px 24px;
+    border-radius: 999px;
+    gap: 16px;
+    z-index: 100;
+    background: var(--apple-card);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: var(--shadow-soft);
+}
+
+.tool-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tool-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--apple-border);
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.tool-circle:hover {
+    background: #fff;
+    border-color: var(--apple-gray);
+}
+
+.tool-circle.active {
+    background: var(--apple-blue);
+    color: #fff;
+    border-color: var(--apple-blue);
+}
+
+.tool-circle:active,
+.action-btn-circle:active {
+    transform: scale(0.96);
+}
+
+.floating-toolbar .divider {
+    width: 1px;
+    height: 24px;
+    background: var(--apple-border);
+}
+
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider-group span {
+    font-size: 0.8125rem;
+    color: var(--apple-gray);
+    min-width: 36px;
+}
+
+/* 滑桿 */
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100px;
+    height: 4px;
+    background: #e5e5e7;
+    border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--apple-border);
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.action-btn-circle:hover {
+    background: #fff;
+    border-color: var(--apple-gray);
+}
+
+/* Apple 主按鈕 */
+.btn-primary-apple {
+    background: var(--apple-blue);
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.btn-primary-apple:hover {
+    background: var(--apple-blue-hover);
+    transform: scale(1.02);
+}
+
+.btn-primary-apple:active {
+    transform: scale(0.96);
+}
+
+.btn-ghost-apple {
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--apple-blue);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-ghost-apple:hover {
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--apple-blue-hover);
+}
+
+/* ---------- 上傳圖片頁：上傳選項 ---------- */
+.upload-layout {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.upload-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 180px;
+    height: 160px;
+    background: var(--apple-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 2px dashed var(--apple-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.upload-card:hover {
+    border-color: var(--apple-blue);
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.upload-label {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--apple-text);
+}
+
+.upload-hint {
+    font-size: 0.75rem;
+    color: var(--apple-gray);
+    margin-top: 4px;
+}
+
+#imagePreviewArea.preview-box--image {
+    width: 100%;
+    max-width: 500px;
+    height: 320px;
+    min-height: 200px;
+}
+
+/* ---------- 區塊 2：預覽區 ---------- */
+.preview-layout {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.section-caption {
+    color: var(--apple-gray);
+    font-size: 0.9375rem;
+    margin-bottom: 16px;
+}
+
+.preview-box {
+    width: 600px;
+    height: 600px;
+    max-width: 100%;
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 2px dashed rgba(0, 122, 255, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 24px;
+    box-shadow: var(--shadow-ambient);
+}
+
+.preview-box svg {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.mode-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.mode-label {
+    font-size: 0.875rem;
+    color: var(--apple-gray);
+    font-weight: 500;
+}
+.mode-btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--apple-gray);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--apple-border);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.mode-btn:hover {
+    background: #fff;
+    color: var(--apple-text);
+    border-color: var(--apple-gray);
+}
+.mode-btn.active {
+    background: var(--apple-blue);
+    color: #fff;
+    border-color: var(--apple-blue);
+}
+
+.section-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ---------- 區塊 3：3D 導出（右側體積預覽） ---------- */
+.export-layout {
+    width: 100%;
+    max-width: 900px;
+}
+
+.export-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.preview-3d-box {
+    width: 520px;
+    height: 420px;
+    max-width: 100%;
+    min-height: 360px;
+    background: #E8E8ED;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--apple-border);
+}
+
+#container3d canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.hint-text {
+    font-size: 0.8125rem;
+    color: var(--apple-gray);
+    margin: 0;
+}
+
+.field-apple {
+    width: 100%;
+    max-width: 400px;
+}
+
+.field-apple label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--apple-text);
+    margin-bottom: 6px;
+}
+
+.field-apple input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--apple-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    font-family: inherit;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field-apple input:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.button-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.divider-line {
+    width: 100%;
+    max-width: 400px;
+    border: none;
+    border-top: 1px solid var(--apple-border);
+    margin: 8px 0;
+}
+
+.export-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--apple-text);
+    margin: 0 0 8px 0;
+}
+
+/* ---------- 隱藏 / 顯示 ---------- */
+.hidden {
+    display: none !important;
+}
+
+/* 步驟切換動畫（由 JS 加上） */
+.canvas-section.transition-in {
+    animation: sectionFadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes sectionFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---------- 上傳成功彈窗 ---------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.modal-overlay.is-open {
+    display: flex;
+}
+
+.modal-panel {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+    animation: modalIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-title {
+    margin: 0 0 12px 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--apple-text);
+}
+
+.modal-body {
+    margin: 0 0 20px 0;
+    font-size: 0.9375rem;
+    color: var(--apple-gray);
+    line-height: 1.5;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* ---------- Gallery 頁（Apple 風格一致） ---------- */
+body.page-gallery {
+    background-color: var(--apple-bg);
+    padding: 24px 16px 48px;
+}
+
+.page-gallery .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    background: var(--apple-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 32px 28px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--apple-border);
+    box-shadow: var(--shadow-soft);
+}
+
+.page-gallery h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--apple-text);
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.page-gallery p.text-muted {
+    color: var(--apple-gray) !important;
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.page-gallery .btn-outline-primary {
+    border-radius: 999px;
+    border-color: var(--apple-blue);
+    color: var(--apple-blue);
+}
+
+.page-gallery .btn-outline-primary:hover {
+    background: rgba(0, 122, 255, 0.1);
+    color: var(--apple-blue-hover);
+}
+
 .gallery-card {
     display: flex;
     flex-direction: column;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-sm);
     overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--apple-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.gallery-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
 .gallery-preview {
     height: 220px;
-    background-color: #ffffff;
+    background: var(--apple-bg);
     display: flex;
     align-items: center;
     justify-content: center;

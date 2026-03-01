@@ -199,3 +199,112 @@ python git_helper.py
 ```
 
 以選單方式完成：查看狀態、add、commit、log、分支、pull、push、stash、remote、還原、diff、移除追蹤、初始化等常用操作，無需背指令。僅使用 Python 內建模組，不需 pip 安裝。
+
+---
+
+## 八、前端（React）UI 美化與互動建議（選用）
+
+若你在本專案中有使用 React 建前端，建議在「React 專案根目錄」另外建立一個子專案（例如 `frontend/`），並在該資料夾內安裝前端依賴。以下以常見的做法整理幾個建議組合，你可以選一個主路線：
+
+### 1. 使用 UI 元件庫（快速變漂亮）
+
+- **推薦組合（其一即可）**：
+  - **MUI**（Material UI）：現代、文件多，適合後台介面、控制台、表單較多的情境。
+  - **Ant Design**：偏企業級風格，表格、表單元件很完整。
+  - **Chakra UI**：語法簡潔、深色模式好開、客製化彈性高。
+
+> 下方以 MUI 為例，其他元件庫安裝方式大同小異。
+
+```bash
+cd path\to\your-react-app
+
+# 安裝 MUI 及其樣式依賴
+npm install @mui/material @emotion/react @emotion/styled
+# 若需要圖示
+npm install @mui/icons-material
+```
+
+React 中即可直接使用：
+
+```tsx
+import Button from '@mui/material/Button';
+
+export function Example() {
+  return (
+    <Button variant="contained" color="primary">
+      儲存設定
+    </Button>
+  );
+}
+```
+
+### 2. 使用 Tailwind CSS 做版型（實用、可與元件庫並用）
+
+若你偏好「原子化 class」來控制排版與間距，可以在 React 專案中加入 Tailwind。不同建構工具（Create React App、Vite、Next.js）設定略有差異，官方文件都有一步一步教學，這裡只列出大致流程（以 Vite 為例）：
+
+```bash
+cd path\to\your-react-app
+
+# 安裝 Tailwind、PostCSS、Autoprefixer
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+接著在 `tailwind.config.js` 設定 `content` 指向你的 React 檔案，並在 `src/index.css`（或全域樣式檔）加入：
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+之後即可在 React 元件中使用：
+
+```tsx
+export function Card({ title, children }) {
+  return (
+    <div className="rounded-2xl bg-slate-900/90 border border-slate-700/80 p-4 shadow-lg">
+      <h2 className="text-lg font-semibold text-slate-50 mb-2">{title}</h2>
+      <div className="text-sm text-slate-300">{children}</div>
+    </div>
+  );
+}
+```
+
+### 3. 加上互動與動畫（Framer Motion）
+
+若希望畫面有順暢的進場、Hover、切換動畫，可以在 React 中加入 Framer Motion：
+
+```bash
+cd path\to\your-react-app
+npm install framer-motion
+```
+
+簡單使用範例：
+
+```tsx
+import { motion } from 'framer-motion';
+
+export function AnimatedPanel({ children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="rounded-2xl bg-slate-900/90 border border-slate-700/80 p-4"
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+### 4. 建議的實際搭配
+
+- **若你想要「最快看起來有質感」**：
+  - 先選一套 UI 元件庫（例如 **MUI**），用它的 `AppBar / Button / Card / Dialog` 重構主要頁面。
+  - 之後再視需要在特定區塊加入 Framer Motion 做進場／切換動畫。
+- **若你對 CSS 舒服且喜歡自己排版**：
+  - 在 React 專案加入 **Tailwind CSS**，自己設計版型與色系，再搭配 Framer Motion。
+
+未來若你告訴「React 專案資料夾路徑」及「想先美化的頁面檔案名稱」，可以依照這份說明直接幫你改那個頁面的程式碼。
