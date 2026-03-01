@@ -1,6 +1,11 @@
 // gallery.js
 // 負責從後端取得歷史作品清單，並產生 SVG 預覽與下載按鈕（SVG / STL / G-code）
 
+function apiUrl(path) {
+    var base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '') + '/';
+    return base + path.replace(/^\//, '');
+}
+
 function downloadFile(content, fileName, mimeType) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -65,7 +70,7 @@ async function loadGallery() {
     container.innerHTML = '<p class="text-center text-muted">載入中...</p>';
 
     try {
-        const res = await fetch('fetch_designs_detail.php');
+        const res = await fetch(apiUrl('fetch_designs_detail.php'));
         if (!res.ok) throw new Error('無法取得作品清單');
         const designs = await res.json();
 

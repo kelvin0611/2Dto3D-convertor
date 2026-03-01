@@ -1,6 +1,12 @@
 // 強制鎖定為單一黑色
 const THEME_COLOR = '#000000';
 
+// API 基底網址（與目前頁面同目錄），確保從 XAMPP 或任意路徑開啟都能正確請求 PHP
+function apiUrl(path) {
+    var base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '') + '/';
+    return base + path.replace(/^\//, '');
+}
+
 // ==========================================
 // 系統 1：2D 畫布與「筆畫路徑」系統
 // ==========================================
@@ -15,7 +21,7 @@ let currentMode = 'brush';
 const sizeSlider = document.getElementById('sizeSlider');
 const sizeDisplay = document.getElementById('sizeDisplay');
 
-sizeSlider.addEventListener('input', function() { sizeDisplay.innerText = this.value + ' px'; });
+sizeSlider.addEventListener('input', function() { sizeDisplay.innerText = this.value + 'px'; });
 
 document.getElementById('tool-brush').addEventListener('click', function() {
     currentMode = 'brush';
@@ -135,7 +141,7 @@ function getBoundingBox() {
         });
     });
 
-    if (!hasPoints) return { x: 0, y: 0, w: 500, h: 500, cx: 250, cy: 250 };
+    if (!hasPoints) return { x: 0, y: 0, w: 600, h: 600, cx: 300, cy: 300 };
 
     const padding = 20;
     return {
@@ -148,7 +154,7 @@ function getBoundingBox() {
     };
 }
 
-const CANVAS_SIZE = 500; // 與 #canvas2d 尺寸一致，用於筆畫比例計算
+const CANVAS_SIZE = 600; // 與 #canvas2d 尺寸一致，用於筆畫比例計算
 
 function generateSVG() {
     drawingBBox = getBoundingBox();
@@ -184,8 +190,7 @@ document.getElementById('goToPreviewBtn').addEventListener('click', () => {
     }
     currentSVGString = generateSVG();
     document.getElementById('preview2d-container').innerHTML = currentSVGString;
-
-    switchSection('section-preview', '步驟 2：確認 2D 向量草圖');
+    switchSection('section-preview');
 });
 
 
@@ -198,14 +203,23 @@ let is3DInitialized = false;
 function init3D() {
     if(is3DInitialized) return;
     const container = document.getElementById('container3d');
-    const containerWidth = container.clientWidth || 500;
-    const containerHeight = container.clientHeight || 500;
+    var containerWidth = container.clientWidth || 500;
+    var containerHeight = container.clientHeight || 500;
+    if (containerWidth < 10 || containerHeight < 10) {
+        containerWidth = 520;
+        containerHeight = 420;
+    }
+    var aspect = containerWidth / containerHeight;
+    if (!Number.isFinite(aspect) || aspect <= 0) aspect = 520 / 420;
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, containerWidth / containerHeight, 1, 2000);
+    camera = new THREE.PerspectiveCamera(45, aspect, 1, 2000);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(containerWidth, containerHeight);
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
     container.appendChild(renderer.domElement);
 
     const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -226,6 +240,17 @@ function init3D() {
     }
     animate();
     is3DInitialized = true;
+}
+
+function resize3DIfNeeded() {
+    if (!renderer || !is3DInitialized) return;
+    const container = document.getElementById('container3d');
+    var w = container.clientWidth || 520;
+    var h = container.clientHeight || 420;
+    if (w < 10 || h < 10) return;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
 }
 
 function build3DModel() {
@@ -306,26 +331,39 @@ function build3DModel() {
 // 系統 4：介面切換與匯出下載邏輯
 // ==========================================
 
-function switchSection(showId, titleText) {
-    document.getElementById('section-2d').classList.add('hidden');
-    document.getElementById('section-preview').classList.add('hidden');
-    document.getElementById('section-3d').classList.add('hidden');
+function switchSection(showId) {
+    const sections = ['section-2d', 'section-preview', 'section-3d'];
+    sections.forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.add('hidden');
+        el.classList.remove('transition-in');
+    });
 
-    document.getElementById(showId).classList.remove('hidden');
-    document.getElementById('step-title').innerText = titleText;
+    const target = document.getElementById(showId);
+    target.classList.remove('hidden');
+    target.classList.add('transition-in');
+
+    document.querySelectorAll('.step-indicator .step').forEach(step => {
+        step.classList.toggle('active', step.getAttribute('data-step') === showId);
+    });
 }
 
 document.getElementById('backToDrawBtn').addEventListener('click', () => {
-    switchSection('section-2d', '步驟 1：在畫板上創作');
+    switchSection('section-2d');
 });
 
 document.getElementById('convertTo3dBtn').addEventListener('click', () => {
-    switchSection('section-3d', '步驟 3：預覽並匯出 3D 模型');
-    build3DModel();
+    switchSection('section-3d');
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            build3DModel();
+            resize3DIfNeeded();
+        });
+    });
 });
 
 document.getElementById('backToPreviewBtn').addEventListener('click', () => {
-    switchSection('section-preview', '步驟 2：確認 2D 向量草圖');
+    switchSection('section-preview');
 });
 
 function downloadFile(content, fileName, mimeType) {
@@ -438,7 +476,7 @@ document.getElementById('uploadServerBtn').addEventListener('click', () => {
     formData.append('pathsData', JSON.stringify({ paths, drawingBBox }));
     formData.append('designName', designName);
 
-    fetch('save_model.php', {
+    fetch(apiUrl('save_model.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData.toString()
@@ -448,14 +486,25 @@ document.getElementById('uploadServerBtn').addEventListener('click', () => {
         const msgEl = document.getElementById('uploadSuccessMessage');
         if (msgEl) msgEl.textContent = result || '您的設計已儲存到伺服器。';
         const modalEl = document.getElementById('uploadSuccessModal');
-        if (modalEl && typeof bootstrap !== 'undefined') {
-            const modal = new bootstrap.Modal(modalEl);
-            modal.show();
-        } else {
-            alert('上傳成功！' + (result ? '\n' + result : ''));
+        if (modalEl) {
+            modalEl.classList.add('is-open');
+            modalEl.setAttribute('aria-hidden', 'false');
         }
     })
     .catch(err => {
         alert('上傳失敗，請確定你的 XAMPP 伺服器有開啟！');
     });
+});
+
+document.getElementById('closeUploadModal').addEventListener('click', () => {
+    const modal = document.getElementById('uploadSuccessModal');
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+});
+
+document.getElementById('uploadSuccessModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+        e.currentTarget.classList.remove('is-open');
+        e.currentTarget.setAttribute('aria-hidden', 'true');
+    }
 });
