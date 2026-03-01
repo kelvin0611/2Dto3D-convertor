@@ -1,0 +1,78 @@
+body { background-color: #f8f9fc; font-family: sans-serif; padding: 20px; text-align: center; }
+.workspace { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 0 auto; max-width: 700px; }
+
+/* 🎨 灰白色網格背景 (套用於 3D 預覽區) */
+.grid-pattern {
+    background-color: #f4f6f9;
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+    background-size: 25px 25px;
+    background-position: center center;
+}
+
+/* 畫布與預覽區樣式 */
+#canvas2d { 
+    border: 2px solid #eaecf4; 
+    border-radius: 5px; 
+    cursor: crosshair; 
+    background-color: #ffffff; 
+    width: 500px; 
+    height: 500px; 
+}
+
+#preview2d-container { 
+    width: 500px; 
+    height: 500px; 
+    margin: 0 auto; 
+    border: 2px dashed #4e73df; 
+    background-color: #ffffff; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    padding: 20px;
+}
+
+/* 讓裁切後的 SVG 自動適應預覽區大小 */
+#preview2d-container svg { 
+    max-width: 100%; 
+    max-height: 100%; 
+}
+
+#container3d { 
+    width: 500px; 
+    height: 500px; 
+    margin: 0 auto; 
+    border: 2px solid #4e73df; 
+    border-radius: 5px; 
+}
+
+.hidden { display: none !important; }
+
+/* 工具列樣式 */
+.toolbar { background: #f8f9fc; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: center; gap: 20px; align-items: center; border: 1px solid #e3e6f0; flex-wrap: wrap;}
+.tool-btn.active { background-color: #4e73df; color: white; }
+
+/* Gallery 作品卡片樣式：統一框大小與預覽比例 */
+.gallery-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.gallery-preview {
+    height: 220px;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.gallery-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
