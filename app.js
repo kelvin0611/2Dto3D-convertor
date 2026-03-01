@@ -16,12 +16,71 @@ const ctx = canvas.getContext('2d');
 let isDrawing = false;
 let paths = [];
 let currentPath = null;
+let undoStack = [];
+let redoStack = [];
 
 let currentMode = 'brush';
 const sizeSlider = document.getElementById('sizeSlider');
 const sizeDisplay = document.getElementById('sizeDisplay');
 
 sizeSlider.addEventListener('input', function() { sizeDisplay.innerText = this.value + 'px'; });
+
+// 介面提示元素
+const drawMessageEl = document.getElementById('drawMessage');
+const exportMessageEl = document.getElementById('exportMessage');
+
+function showDrawMessage(message, isError = false) {
+    if (!drawMessageEl) return;
+    drawMessageEl.textContent = message;
+    drawMessageEl.classList.toggle('is-error', !!isError);
+}
+
+function showExportMessage(message, isError = false) {
+    if (!exportMessageEl) return;
+    exportMessageEl.textContent = message;
+    exportMessageEl.classList.toggle('is-error', !!isError);
+}
+
+// 一開始給第一次使用者的簡短引導
+showDrawMessage('用手指或滑鼠在畫布上畫線，完成後點右下角「下一步：預覽 2D」。');
+
+// Undo / Redo 狀態管理
+function clonePaths() {
+    return JSON.parse(JSON.stringify(paths));
+}
+
+function pushUndoState() {
+    undoStack.push(clonePaths());
+    if (undoStack.length > 50) {
+        undoStack.shift();
+    }
+    // 只要有新動作就清空重做堆疊
+    redoStack = [];
+}
+
+// 依照實際顯示尺寸，把螢幕座標換算成畫布內部座標（解決縮放後位置錯位）
+function getCanvasPosFromClientPoint(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+    };
+}
+
+// 取得滑鼠事件座標
+function getCanvasPosFromMouseEvent(event) {
+    return getCanvasPosFromClientPoint(event.clientX, event.clientY);
+}
+
+// 取得觸控事件在畫布上的座標（支援 iPhone / iPad）
+function getCanvasPosFromTouchEvent(event) {
+    const touch = event.touches[0] || event.changedTouches[0];
+    if (!touch) return null;
+    return getCanvasPosFromClientPoint(touch.clientX, touch.clientY);
+}
 
 document.getElementById('tool-brush').addEventListener('click', function() {
     currentMode = 'brush';
@@ -38,42 +97,100 @@ document.getElementById('tool-eraser').addEventListener('click', function() {
 });
 
 canvas.addEventListener('mousedown', (e) => {
+    const pos = getCanvasPosFromMouseEvent(e);
+    if (!pos) return;
     if (currentMode === 'brush') {
+        pushUndoState();
         isDrawing = true;
         currentPath = {
             color: THEME_COLOR,
             size: parseInt(sizeSlider.value),
-            points: [{ x: e.offsetX, y: e.offsetY }]
+            points: [{ x: pos.x, y: pos.y }]
         };
     } else if (currentMode === 'eraser') {
-        erasePathAt(e.offsetX, e.offsetY);
+        pushUndoState();
+        erasePathAt(pos.x, pos.y);
         isDrawing = true;
     }
 });
 
 canvas.addEventListener('mousemove', (e) => {
+    const pos = getCanvasPosFromMouseEvent(e);
+    if (!pos) return;
     if (!isDrawing) return;
     if (currentMode === 'brush' && currentPath) {
         const lastPoint = currentPath.points[currentPath.points.length - 1];
-        const dx = e.offsetX - lastPoint.x;
-        const dy = e.offsetY - lastPoint.y;
+        const dx = pos.x - lastPoint.x;
+        const dy = pos.y - lastPoint.y;
         if (Math.hypot(dx, dy) > 2) {
-            currentPath.points.push({ x: e.offsetX, y: e.offsetY });
+            currentPath.points.push({ x: pos.x, y: pos.y });
             redraw2D();
         }
     } else if (currentMode === 'eraser') {
-        erasePathAt(e.offsetX, e.offsetY);
+        erasePathAt(pos.x, pos.y);
     }
 });
 
-window.addEventListener('mouseup', () => {
+function endDrawing() {
     if (isDrawing && currentMode === 'brush' && currentPath && currentPath.points.length > 1) {
+        // mousedown / touchstart 時已經 pushUndoState()
         paths.push(currentPath);
+        showDrawMessage('已記錄一筆筆畫，還可以繼續畫，或點「下一步：預覽 2D」。', false);
     }
     isDrawing = false;
     currentPath = null;
     redraw2D();
-});
+}
+
+window.addEventListener('mouseup', endDrawing);
+
+// 觸控支援：在手機 / 平板上也可以畫畫
+canvas.addEventListener('touchstart', (e) => {
+    const pos = getCanvasPosFromTouchEvent(e);
+    if (!pos) return;
+    e.preventDefault();
+    if (currentMode === 'brush') {
+        pushUndoState();
+        isDrawing = true;
+        currentPath = {
+            color: THEME_COLOR,
+            size: parseInt(sizeSlider.value),
+            points: [{ x: pos.x, y: pos.y }]
+        };
+    } else if (currentMode === 'eraser') {
+        pushUndoState();
+        erasePathAt(pos.x, pos.y);
+        isDrawing = true;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    if (!isDrawing) return;
+    const pos = getCanvasPosFromTouchEvent(e);
+    if (!pos) return;
+    e.preventDefault();
+    if (currentMode === 'brush' && currentPath) {
+        const lastPoint = currentPath.points[currentPath.points.length - 1];
+        const dx = pos.x - lastPoint.x;
+        const dy = pos.y - lastPoint.y;
+        if (Math.hypot(dx, dy) > 2) {
+            currentPath.points.push({ x: pos.x, y: pos.y });
+            redraw2D();
+        }
+    } else if (currentMode === 'eraser') {
+        erasePathAt(pos.x, pos.y);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    endDrawing();
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    endDrawing();
+}, { passive: false });
 
 function erasePathAt(x, y) {
     const eraseRadius = parseInt(sizeSlider.value);
@@ -113,10 +230,27 @@ function drawSinglePath(path) {
 }
 
 document.getElementById('undoBtn').addEventListener('click', () => {
-    paths.pop(); redraw2D();
+    if (undoStack.length === 0) return;
+    redoStack.push(clonePaths());
+    const prev = undoStack.pop();
+    paths = prev || [];
+    redraw2D();
 });
+
+document.getElementById('redoBtn').addEventListener('click', () => {
+    if (redoStack.length === 0) return;
+    undoStack.push(clonePaths());
+    const next = redoStack.pop();
+    paths = next || [];
+    redraw2D();
+});
+
 document.getElementById('clearBtn').addEventListener('click', () => {
-    paths = []; redraw2D();
+    if (paths.length === 0) return;
+    pushUndoState();
+    paths = [];
+    redraw2D();
+    showDrawMessage('畫布已清除，可以重新開始創作。', false);
 });
 
 
@@ -185,7 +319,7 @@ function generateSVG() {
 
 document.getElementById('goToPreviewBtn').addEventListener('click', () => {
     if(paths.length === 0) {
-        alert('請先在畫板上畫點東西喔！');
+        showDrawMessage('請先在畫布上畫點東西，再點「下一步：預覽 2D」。', true);
         return;
     }
     currentSVGString = generateSVG();
@@ -222,12 +356,16 @@ function init3D() {
     renderer.domElement.style.height = '100%';
     container.appendChild(renderer.domElement);
 
-    const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
     light1.position.set(1, 1, 2);
     scene.add(light1);
 
-    const light2 = new THREE.AmbientLight(0x606060);
+    const light2 = new THREE.AmbientLight(0x808080);
     scene.add(light2);
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    backLight.position.set(-1, -0.5, 1.5);
+    scene.add(backLight);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     modelGroup = new THREE.Group();
@@ -261,7 +399,9 @@ function build3DModel() {
     }
 
     const maxSize = Math.max(drawingBBox.w, drawingBBox.h);
-    camera.position.set(0, -maxSize * 0.6, maxSize * 1.0);
+    // 稍微俯視的 45 度角，讓立體感更明顯
+    camera.position.set(maxSize * 0.6, -maxSize * 0.6, maxSize * 0.9);
+    camera.lookAt(0, 0, 0);
 
     const plateThickness = 10;
     const platePadding = 40;
@@ -442,15 +582,16 @@ document.getElementById('downloadGcodeBtn').addEventListener('click', () => {
     }
     const gcode = generateGCodeFromPaths(paths, drawingBBox);
     if (!gcode) {
-        alert('目前無法產生 G-code，請確認作品是否正確產生邊界。');
+        showExportMessage('目前無法產生 G-code，請確認作品是否有內容且邊界已正確產生。', true);
         return;
     }
     downloadFile(gcode, 'my_design.gcode', 'text/plain');
+    showExportMessage('已產生並下載 G-code。', false);
 });
 
 document.getElementById('uploadServerBtn').addEventListener('click', () => {
     if (paths.length === 0) {
-        alert('目前沒有任何作品可以上傳，請先在畫板上創作。');
+        showExportMessage('目前沒有任何作品可以上傳，請先在畫板上創作。', true);
         return;
     }
 
@@ -484,6 +625,7 @@ document.getElementById('uploadServerBtn').addEventListener('click', () => {
     .then(result => {
         const msgEl = document.getElementById('uploadSuccessMessage');
         if (msgEl) msgEl.textContent = result || '您的設計已儲存到伺服器。';
+        showExportMessage('作品已成功上傳到伺服器。', false);
         const modalEl = document.getElementById('uploadSuccessModal');
         if (modalEl) {
             modalEl.classList.add('is-open');
@@ -491,7 +633,7 @@ document.getElementById('uploadServerBtn').addEventListener('click', () => {
         }
     })
     .catch(err => {
-        alert('上傳失敗，請確定你的 XAMPP 伺服器有開啟！');
+        showExportMessage('上傳失敗，請確定你的 XAMPP 伺服器有開啟！', true);
     });
 });
 

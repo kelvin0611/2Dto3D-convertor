@@ -141,6 +141,8 @@ body.apple-theme {
     cursor: crosshair;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    touch-action: none;
+    -ms-touch-action: none;
 }
 
 #canvas2d:hover {
@@ -495,6 +497,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
     margin: 0;
 }
 
+.helper-text {
+    margin-top: 8px;
+    font-size: 0.8125rem;
+    color: var(--apple-gray);
+    text-align: center;
+}
+
+.helper-text.is-error {
+    color: #d0021b;
+}
+
 .field-apple {
     width: 100%;
     max-width: 400px;
@@ -698,4 +711,57 @@ body.page-gallery {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+}
+
+/* ---------- 行動裝置優化（包含 iPhone 15 Pro Max） ---------- */
+@media (max-width: 768px) {
+    .nav-content {
+        padding: 10px 16px;
+        gap: 12px;
+    }
+
+    .step-indicator {
+        flex-basis: 100%;
+        justify-content: center;
+        font-size: 0.75rem;
+    }
+
+    .workspace-container {
+        padding: 72px 16px 96px;
+    }
+
+    .canvas-wrapper {
+        padding: 16px;
+    }
+
+    #canvas2d {
+        width: 100%;
+        max-width: 380px;
+        height: auto;
+    }
+
+    .preview-box {
+        width: 100%;
+        height: auto;
+        min-height: 260px;
+        padding: 16px;
+    }
+
+    .preview-3d-box {
+        width: 100%;
+        height: 320px;
+        min-height: 260px;
+    }
+
+    .floating-toolbar {
+        bottom: 16px;
+        padding: 8px 12px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .slider-group {
+        width: 140px;
+        justify-content: space-between;
+    }
 }

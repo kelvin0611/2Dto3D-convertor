@@ -29,6 +29,7 @@
             <div class="canvas-wrapper canvas-dot-grid">
                 <canvas id="canvas2d" width="600" height="600"></canvas>
             </div>
+            <p id="drawMessage" class="helper-text"></p>
             <div class="floating-toolbar">
                 <div class="tool-group">
                     <button type="button" id="tool-brush" class="tool-circle active" title="畫筆">🖌️</button>
@@ -42,6 +43,7 @@
                 <div class="divider"></div>
                 <div class="action-group">
                     <button type="button" id="undoBtn" class="action-btn-circle" title="復原">↩</button>
+                    <button type="button" id="redoBtn" class="action-btn-circle" title="重做">↪</button>
                     <button type="button" id="clearBtn" class="action-btn-circle" title="清除">🗑</button>
                     <button type="button" id="goToPreviewBtn" class="btn-primary-apple">下一步：預覽 2D</button>
                 </div>
@@ -51,7 +53,7 @@
         <!-- 區塊 2：2D 預覽 -->
         <section id="section-preview" class="canvas-section hidden">
             <div class="preview-layout">
-                <p class="section-caption">裁切後的向量圖 (SVG)</p>
+                <p class="section-caption">裁切後的向量圖 (SVG) — 這是系統裁切後的線稿，也是後面 3D 浮雕的輪廓。</p>
                 <div id="preview2d-container" class="preview-box"></div>
                 <div class="section-actions">
                     <button type="button" id="backToDrawBtn" class="btn-ghost-apple">← 回到畫板</button>
@@ -65,7 +67,8 @@
             <div class="export-layout">
                 <div class="export-actions">
                     <div id="container3d" class="preview-3d-box"></div>
-                    <p class="hint-text">左鍵旋轉 · 右鍵平移 · 滾輪縮放</p>
+                    <p class="hint-text">拖曳旋轉 · 滾輪或雙指縮放 · 完成後可匯出 G-code</p>
+                    <p id="exportMessage" class="helper-text"></p>
                     <div class="field-apple">
                         <label for="designNameInput">作品名稱（選填）</label>
                         <input type="text" id="designNameInput" placeholder="例如：我的蝴蝶結" maxlength="80" autocomplete="off">
