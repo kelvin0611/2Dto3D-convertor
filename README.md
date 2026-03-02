@@ -1,14 +1,31 @@
-# Snek.3D: Computer Vision-Driven 2D-to-3D Modeling Pipeline
-
+# 2t3d: Computer Vision-Driven 2D-to-3D Modeling Pipeline
 **Domain:** Computer Vision, Computational Geometry, 3D Web Graphics  
-**Tech Stack:** JavaScript, Three.js, Python, OpenCV, HTML5 Canvas  
+**Tech Stack:** JavaScript, Three.js, Python, OpenCV, HTML5 Canvas
 
 ## 📌 Project Overview
-Snek.3D is an interactive web application that bridges the gap between 2D sketching and 3D printing. By leveraging Computer Vision algorithms and web-based 3D rendering, the tool automatically translates user-drawn sketches and uploaded 2D raster images into 3D printable meshes (STL/G-code). 
+2t3d is an interactive web application that bridges the gap between 2D sketching and 3D printing. By leveraging Computer Vision algorithms and web-based 3D rendering, the tool automatically translates user-drawn sketches and uploaded 2D raster images into 3D printable meshes (STL/G-code).  
 
 This project demonstrates the practical application of image processing, contour hierarchy analysis, and procedural 3D geometry generation.
 
+## 🎥 Demo
 
+Watch the 2t3d demo video:  
+https://youtu.be/Rhsx1k7aegk
+
+<!-- 
+  Alternative embed style (if you prefer iframe over thumbnail link):
+  <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+    <iframe 
+      src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE" 
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" 
+      allowfullscreen 
+      title="2t3d Demo">
+    </iframe>
+  </div>
+-->
+
+Or view the screenshot:  
+![2t3d in action](demo.png)
 
 ---
 
@@ -21,16 +38,28 @@ This project demonstrates the practical application of image processing, contour
 ### 2. Raster-to-3D Pipeline (Upload Mode)
 Converts standard 2D images (PNG/JPG) into 3D reliefs using two distinct computational approaches:
 
-* **Solid Pixel Relief (Voxel Approach):** * Downscales images and applies grayscale thresholding to generate a binary `pixelMap`.
-    * Maps each valid pixel to a physical 3D coordinate space, generating a robust, voxel-like 3D mesh.
-* **Smooth Path Relief (Vector Approach):** * Traces binary image data to extract vector paths.
-    * Utilizes geometric nesting (point-in-polygon calculations) to detect outer boundaries and inner negative spaces (holes).
-    * Extrudes the shapes using `THREE.ExtrudeGeometry` with customized beveling for a polished aesthetic.
+- **Solid Pixel Relief (Voxel Approach):**  
+  - Downscales images and applies grayscale thresholding to generate a binary `pixelMap`.  
+  - Maps each valid pixel to a physical 3D coordinate space, generating a robust, voxel-like 3D mesh.
+
+- **Smooth Path Relief (Vector Approach):**  
+  - Traces binary image data to extract vector paths.  
+  - Utilizes geometric nesting (point-in-polygon calculations) to detect outer boundaries and inner negative spaces (holes).  
+  - Extrudes the shapes using `THREE.ExtrudeGeometry` with customized beveling for a polished aesthetic.
 
 ---
 
 ## 👁️ Computer Vision Backend (OpenCV Integration)
 To overcome the limitations of client-side JavaScript tracing, a robust Python/OpenCV backend was designed to handle complex morphological analysis and contour detection.
+
+### The CV Pipeline:
+1. **Image Pre-processing:** Uploaded images are ingested and converted to grayscale (`cv2.cvtColor`).
+2. **Binary Thresholding:** Adaptive or global thresholding (`cv2.threshold` with `cv2.THRESH_BINARY_INV`) isolates the foreground subject from the background.
+3. **Hierarchical Contour Detection:**  
+   - Utilizes `cv2.findContours` with the `cv2.RETR_CCOMP` flag.  
+   - This specific retrieval mode organizes contours into a two-level hierarchy: external boundaries (Shape) and internal boundaries (Holes).
+4. **Polygon Approximation:** Applies the Douglas-Peucker algorithm (`cv2.approxPolyDP`) to reduce vertex count while preserving the geometric integrity of the shape, optimizing it for 3D rendering.
+5. **Data Serialization:** Packages the external contours and their corresponding hierarchical children into a lightweight JSON structure for the front-end to extrude.
 
 ### The CV Pipeline:
 1.  **Image Pre-processing:** Uploaded images are ingested and converted to grayscale (`cv2.cvtColor`).
