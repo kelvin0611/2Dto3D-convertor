@@ -82,6 +82,13 @@ function getCanvasPosFromTouchEvent(event) {
     return getCanvasPosFromClientPoint(touch.clientX, touch.clientY);
 }
 
+// 若瀏覽器支援 Pointer Events，優先使用（對真實手機與 Chrome 模擬都較一致）
+const USE_POINTER = window.PointerEvent !== undefined;
+if (USE_POINTER) {
+    // 確保在支援 pointer 的環境中，畫布本身禁止預設觸控捲動
+    canvas.style.touchAction = 'none';
+}
+
 document.getElementById('tool-brush').addEventListener('click', function() {
     currentMode = 'brush';
     this.classList.add('active');
@@ -96,41 +103,6 @@ document.getElementById('tool-eraser').addEventListener('click', function() {
     canvas.style.cursor = 'cell';
 });
 
-canvas.addEventListener('mousedown', (e) => {
-    const pos = getCanvasPosFromMouseEvent(e);
-    if (!pos) return;
-    if (currentMode === 'brush') {
-        pushUndoState();
-        isDrawing = true;
-        currentPath = {
-            color: THEME_COLOR,
-            size: parseInt(sizeSlider.value),
-            points: [{ x: pos.x, y: pos.y }]
-        };
-    } else if (currentMode === 'eraser') {
-        pushUndoState();
-        erasePathAt(pos.x, pos.y);
-        isDrawing = true;
-    }
-});
-
-canvas.addEventListener('mousemove', (e) => {
-    const pos = getCanvasPosFromMouseEvent(e);
-    if (!pos) return;
-    if (!isDrawing) return;
-    if (currentMode === 'brush' && currentPath) {
-        const lastPoint = currentPath.points[currentPath.points.length - 1];
-        const dx = pos.x - lastPoint.x;
-        const dy = pos.y - lastPoint.y;
-        if (Math.hypot(dx, dy) > 2) {
-            currentPath.points.push({ x: pos.x, y: pos.y });
-            redraw2D();
-        }
-    } else if (currentMode === 'eraser') {
-        erasePathAt(pos.x, pos.y);
-    }
-});
-
 function endDrawing() {
     if (isDrawing && currentMode === 'brush' && currentPath && currentPath.points.length > 1) {
         // mousedown / touchstart 時已經 pushUndoState()
@@ -142,55 +114,142 @@ function endDrawing() {
     redraw2D();
 }
 
-window.addEventListener('mouseup', endDrawing);
-
-// 觸控支援：在手機 / 平板上也可以畫畫
-canvas.addEventListener('touchstart', (e) => {
-    const pos = getCanvasPosFromTouchEvent(e);
-    if (!pos) return;
-    e.preventDefault();
-    if (currentMode === 'brush') {
-        pushUndoState();
-        isDrawing = true;
-        currentPath = {
-            color: THEME_COLOR,
-            size: parseInt(sizeSlider.value),
-            points: [{ x: pos.x, y: pos.y }]
-        };
-    } else if (currentMode === 'eraser') {
-        pushUndoState();
-        erasePathAt(pos.x, pos.y);
-        isDrawing = true;
-    }
-}, { passive: false });
-
-canvas.addEventListener('touchmove', (e) => {
-    if (!isDrawing) return;
-    const pos = getCanvasPosFromTouchEvent(e);
-    if (!pos) return;
-    e.preventDefault();
-    if (currentMode === 'brush' && currentPath) {
-        const lastPoint = currentPath.points[currentPath.points.length - 1];
-        const dx = pos.x - lastPoint.x;
-        const dy = pos.y - lastPoint.y;
-        if (Math.hypot(dx, dy) > 2) {
-            currentPath.points.push({ x: pos.x, y: pos.y });
-            redraw2D();
+if (USE_POINTER) {
+    // Pointer Events 版本（優先用這個）
+    canvas.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        const pos = getCanvasPosFromClientPoint(e.clientX, e.clientY);
+        if (!pos) return;
+        e.preventDefault();
+        if (currentMode === 'brush') {
+            pushUndoState();
+            isDrawing = true;
+            currentPath = {
+                color: THEME_COLOR,
+                size: parseInt(sizeSlider.value),
+                points: [{ x: pos.x, y: pos.y }]
+            };
+        } else if (currentMode === 'eraser') {
+            pushUndoState();
+            erasePathAt(pos.x, pos.y);
+            isDrawing = true;
         }
-    } else if (currentMode === 'eraser') {
-        erasePathAt(pos.x, pos.y);
-    }
-}, { passive: false });
+    });
 
-canvas.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    endDrawing();
-}, { passive: false });
+    canvas.addEventListener('pointermove', (e) => {
+        if (!isDrawing) return;
+        const pos = getCanvasPosFromClientPoint(e.clientX, e.clientY);
+        if (!pos) return;
+        e.preventDefault();
+        if (currentMode === 'brush' && currentPath) {
+            const lastPoint = currentPath.points[currentPath.points.length - 1];
+            const dx = pos.x - lastPoint.x;
+            const dy = pos.y - lastPoint.y;
+            if (Math.hypot(dx, dy) > 2) {
+                currentPath.points.push({ x: pos.x, y: pos.y });
+                redraw2D();
+            }
+        } else if (currentMode === 'eraser') {
+            erasePathAt(pos.x, pos.y);
+        }
+    });
 
-canvas.addEventListener('touchcancel', (e) => {
-    e.preventDefault();
-    endDrawing();
-}, { passive: false });
+    canvas.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        endDrawing();
+    });
+
+    canvas.addEventListener('pointercancel', (e) => {
+        e.preventDefault();
+        endDrawing();
+    });
+} else {
+    // 備援：舊版只支援 mouse + touch 的瀏覽器
+    canvas.addEventListener('mousedown', (e) => {
+        const pos = getCanvasPosFromMouseEvent(e);
+        if (!pos) return;
+        if (currentMode === 'brush') {
+            pushUndoState();
+            isDrawing = true;
+            currentPath = {
+                color: THEME_COLOR,
+                size: parseInt(sizeSlider.value),
+                points: [{ x: pos.x, y: pos.y }]
+            };
+        } else if (currentMode === 'eraser') {
+            pushUndoState();
+            erasePathAt(pos.x, pos.y);
+            isDrawing = true;
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const pos = getCanvasPosFromMouseEvent(e);
+        if (!pos) return;
+        if (!isDrawing) return;
+        if (currentMode === 'brush' && currentPath) {
+            const lastPoint = currentPath.points[currentPath.points.length - 1];
+            const dx = pos.x - lastPoint.x;
+            const dy = pos.y - lastPoint.y;
+            if (Math.hypot(dx, dy) > 2) {
+                currentPath.points.push({ x: pos.x, y: pos.y });
+                redraw2D();
+            }
+        } else if (currentMode === 'eraser') {
+            erasePathAt(pos.x, pos.y);
+        }
+    });
+
+    window.addEventListener('mouseup', endDrawing);
+
+    // 觸控支援：在手機 / 平板上也可以畫畫
+    canvas.addEventListener('touchstart', (e) => {
+        const pos = getCanvasPosFromTouchEvent(e);
+        if (!pos) return;
+        e.preventDefault();
+        if (currentMode === 'brush') {
+            pushUndoState();
+            isDrawing = true;
+            currentPath = {
+                color: THEME_COLOR,
+                size: parseInt(sizeSlider.value),
+                points: [{ x: pos.x, y: pos.y }]
+            };
+        } else if (currentMode === 'eraser') {
+            pushUndoState();
+            erasePathAt(pos.x, pos.y);
+            isDrawing = true;
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        if (!isDrawing) return;
+        const pos = getCanvasPosFromTouchEvent(e);
+        if (!pos) return;
+        e.preventDefault();
+        if (currentMode === 'brush' && currentPath) {
+            const lastPoint = currentPath.points[currentPath.points.length - 1];
+            const dx = pos.x - lastPoint.x;
+            const dy = pos.y - lastPoint.y;
+            if (Math.hypot(dx, dy) > 2) {
+                currentPath.points.push({ x: pos.x, y: pos.y });
+                redraw2D();
+            }
+        } else if (currentMode === 'eraser') {
+            erasePathAt(pos.x, pos.y);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        endDrawing();
+    }, { passive: false });
+
+    canvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        endDrawing();
+    }, { passive: false });
+}
 
 function erasePathAt(x, y) {
     const eraseRadius = parseInt(sizeSlider.value);

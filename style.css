@@ -41,6 +41,12 @@ body.apple-theme {
     box-shadow: var(--shadow-soft);
 }
 
+@media (max-width: 768px) {
+    .glass-nav {
+        position: sticky;
+    }
+}
+
 .nav-content {
     max-width: 1200px;
     margin: 0 auto;
@@ -754,7 +760,9 @@ body.page-gallery {
     }
 
     .floating-toolbar {
-        bottom: 16px;
+        position: static;
+        transform: none;
+        margin: 16px auto 0;
         padding: 8px 12px;
         gap: 8px;
         flex-wrap: wrap;
