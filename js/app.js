@@ -675,7 +675,7 @@ document.getElementById('uploadServerBtn').addEventListener('click', () => {
     formData.append('pathsData', JSON.stringify({ paths, drawingBBox }));
     formData.append('designName', designName);
 
-    fetch(apiUrl('save_model.php'), {
+    fetch(apiUrl('server/save_model.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData.toString()

@@ -70,7 +70,7 @@ async function loadGallery() {
     container.innerHTML = '<p class="text-center text-muted">載入中...</p>';
 
     try {
-        const res = await fetch(apiUrl('fetch_designs_detail.php'));
+        const res = await fetch(apiUrl('server/fetch_designs_detail.php'));
         if (!res.ok) throw new Error('無法取得作品清單');
         const designs = await res.json();
 

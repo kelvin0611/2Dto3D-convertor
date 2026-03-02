@@ -14,7 +14,8 @@
     header("Access-Control-Allow-Origin: *");
     header("Content-Type: application/json; charset=UTF-8");
 
-    $uploadDir = __DIR__ . '/uploads/';
+    // 上傳檔案實際存放在專案根目錄的 uploads/ 中
+    $uploadDir = __DIR__ . '/../uploads/';
 
     if (!is_dir($uploadDir) || !is_readable($uploadDir)) {
         echo json_encode([]);
